@@ -30,10 +30,7 @@ class DoManager(object):
         json = self.request('/droplets/')
         if self.api_version == 2:
             for index in range(len(json['droplets'])):
-                try:
-                    json['droplets'][index][u'ip_address'] = json['droplets'][index]['networks']['v4'][0]['ip_address']
-                except IndexError:
-                    json['droplets'][index][u'ip_address'] = ''
+                json['droplets'][index][u'ip_address'] = self.public_ipv4(json['droplets'][index])
         return json['droplets']
 
     def new_droplet(self, name, size_id, image_id, region_id,
@@ -91,11 +88,15 @@ class DoManager(object):
     def show_droplet(self, droplet_id):
         json = self.request('/droplets/%s' % droplet_id)
         if self.api_version == 2:
-            try:
-                json['droplet'][u'ip_address'] = json['droplet']['networks']['v4'][0]['ip_address']
-            except IndexError:
-                json['droplet'][u'ip_address'] = ''
+            json['droplet'][u'ip_address'] = self.public_ipv4(json['droplet'])
         return json['droplet']
+
+    def public_ipv4(self, droplet_json):
+        for network in droplet_json['networks']['v4']:
+            if network['type'] == 'public':
+                return network['ip_address']
+
+        return ''
 
     def droplet_v2_action(self, droplet_id, droplet_type, params=None):
         if params is None:
